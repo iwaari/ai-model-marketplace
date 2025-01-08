@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Model Marketplace</title>
+  <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>AI Model Marketplace</h1>
+    <div id="wallet-info">
+      <span>Connected Account: <span id="account-address">Not Connected</span></span>
+    </div>
+  </header>
+
+  <!-- Form to list a new AI model -->
+  <section>
+    <h2>List a New AI Model</h2>
+    <form id="list-model-form">
+      <input type="text" id="model-name" placeholder="Model Name" required>
+      <textarea id="model-description" placeholder="Model Description" required></textarea>
+      <input type="number" id="model-price" placeholder="Price (in ETH)" required>
+      <button type="submit">List Model</button>
+    </form>
+  </section>
+
+  <!-- Models List -->
+  <section id="models-list">
+    <h2>Available AI Models</h2>
+    <ul id="models-grid"></ul>
+  </section>
+
+  <!-- Purchase and Rate Model -->
+  <section id="purchase-rate-section">
+    <h2>Purchase and Rate a Model</h2>
+    <input type="number" id="purchase-model-id" placeholder="Model ID to purchase" required>
+    <button id="purchase-button">Purchase Model</button>
+    <input type="number" id="rating-input" placeholder="Rate (1-5)" required>
+    <button id="rate-button">Rate Model</button>
+  </section>
+
+  <!-- View Model Details -->
+  <section id="model-details-section">
+    <h2>View Model Details</h2>
+    <input type="number" id="view-model-id" placeholder="Model ID to view" required>
+    <button id="view-model-button">View Model Details</button>
+    <div id="model-details"></div>
+  </section>
+
+  <!-- Withdraw Funds -->
+  <section id="withdraw-funds-section">
+    <h2>Withdraw Funds</h2>
+    <button id="withdraw-button">Withdraw Funds</button>
+  </section>
+
+  <!-- Loading Indicator -->
+  <div id="loading" style="display: none;">Loading...</div>
+
+  <script>
+    if (window.ethereum) {
+      let web3 = new Web3(window.ethereum);
+      
+      // Request account access
+      window.ethereum.request({ method: 'eth_requestAccounts' }).then(accounts => {
+        const account = accounts[0];
+        document.getElementById('account-address').textContent = account;
+      }).catch(error => {
+        console.error(error);
+        alert('Failed to connect to MetaMask!');
+      });
+    } else {
+      alert('Please install MetaMask!');
+    }
+
+    // Toggle loading indicator
+    function toggleLoading(isLoading) {
+      const loadingElement = document.getElementById('loading');
+      if (isLoading) {
+        loadingElement.style.display = 'block';
+      } else {
+        loadingElement.style.display = 'none';
+      }
+    }
+
+  </script>
+
+  <!-- Load App.js and Web3.js -->
+  <script src="app.js"></script>
+</body>
+</html>
