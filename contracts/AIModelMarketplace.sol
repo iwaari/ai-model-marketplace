@@ -37,6 +37,7 @@ contract AIModelMarketplace {
             totalReviews: 0
         }));
 
+        // Emit event for successful listing
         emit ModelListed(models.length - 1, name, price, msg.sender);
     }
 
@@ -53,6 +54,7 @@ contract AIModelMarketplace {
         // Transfer payment to the creator
         payable(model.creator).transfer(msg.value);
 
+        // Emit event for successful purchase
         emit ModelPurchased(modelId, msg.sender);
     }
 
@@ -67,6 +69,7 @@ contract AIModelMarketplace {
         model.totalRating += rating;
         model.totalReviews += 1;
 
+        // Emit event for successful rating
         emit ModelRated(modelId, rating, msg.sender);
     }
 
@@ -74,7 +77,7 @@ contract AIModelMarketplace {
     function getModelDetails(uint256 modelId)
         public
         view
-        returns (string memory, string memory, uint256, address, uint256)
+        returns (string memory, string memory, uint256, address, uint256, uint256)
     {
         require(modelId < models.length, "Invalid model ID");
 
@@ -86,8 +89,18 @@ contract AIModelMarketplace {
             model.description,
             model.price,
             model.creator,
-            averageRating
+            averageRating,
+            model.totalReviews
         );
+    }
+
+    // Function to retrieve all model IDs
+    function getAllModels() public view returns (uint256[] memory) {
+        uint256[] memory modelIds = new uint256[](models.length);
+        for (uint256 i = 0; i < models.length; i++) {
+            modelIds[i] = i;
+        }
+        return modelIds;
     }
 
     // Function to withdraw funds (contract-level, if applicable)
