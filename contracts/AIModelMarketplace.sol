@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 contract AIModelMarketplace {
+
     struct Model {
         string name;
         string description;
@@ -9,6 +10,7 @@ contract AIModelMarketplace {
         address creator;
         uint256 totalRating;
         uint256 totalReviews;
+        uint256 averageRating; // Store the average rating to save on calculations
     }
 
     // Array to store all models
@@ -34,7 +36,8 @@ contract AIModelMarketplace {
             price: price,
             creator: msg.sender,
             totalRating: 0,
-            totalReviews: 0
+            totalReviews: 0,
+            averageRating: 0
         }));
 
         // Emit event for successful listing
@@ -66,8 +69,12 @@ contract AIModelMarketplace {
 
         Model storage model = models[modelId];
 
+        // Update total rating and reviews count
         model.totalRating += rating;
         model.totalReviews += 1;
+
+        // Update average rating (simpler than recalculating each time)
+        model.averageRating = model.totalRating / model.totalReviews;
 
         // Emit event for successful rating
         emit ModelRated(modelId, rating, msg.sender);
@@ -82,14 +89,13 @@ contract AIModelMarketplace {
         require(modelId < models.length, "Invalid model ID");
 
         Model storage model = models[modelId];
-        uint256 averageRating = model.totalReviews > 0 ? model.totalRating / model.totalReviews : 0;
 
         return (
             model.name,
             model.description,
             model.price,
             model.creator,
-            averageRating,
+            model.averageRating,
             model.totalReviews
         );
     }
@@ -103,7 +109,7 @@ contract AIModelMarketplace {
         return modelIds;
     }
 
-    // Function to withdraw funds (contract-level, if applicable)
+    // Function to withdraw funds for the owner (contract-level)
     function withdrawFunds() public {
         uint256 balance = address(this).balance;
         require(balance > 0, "No funds available");

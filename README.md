@@ -53,7 +53,7 @@ cd ai-model-marketplace
 
 ## MIT License
 
-Copyright (c) 2025 [Your Name or Your Company Name]
+Copyright (c) 2025 [Kairanbay Arailym]
 
 The MIT License (MIT)
 
