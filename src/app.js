@@ -1,28 +1,7 @@
-// Import Web3.js
-const Web3 = require('web3');
-let web3;
-
-// Check if MetaMask is available
-if (window.ethereum) {
-    web3 = new Web3(window.ethereum);
-
-    // Request MetaMask connection
-    window.ethereum.request({ method: 'eth_requestAccounts' })
-        .then(accounts => {
-            const account = accounts[0];
-            console.log('Connected Account:', account);
-        })
-        .catch(error => {
-            console.error('Error connecting to MetaMask:', error);
-            alert('Failed to connect to MetaMask!');
-        });
-} else {
-    alert('MetaMask is not installed. Please install it to use this application.');
-}
-
-// Set up contract ABI and address
-const contractAddress = "0x41b387586B4b4619BE4FF7ad14136e122aE3F1F1"; // Replace with actual address
-const contractABI =  [
+const provider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = provider.getSigner();
+const contractAddress = "0xB773E623eE69387FeD7C71e36677139fE124a140"; // Replace with actual address
+const contractABI = [
     {
         "anonymous": false,
         "inputs": [
@@ -294,137 +273,129 @@ const contractABI =  [
         "type": "receive"
     }
 ];
-let contract;
-let account;
+const contract = new ethers.Contract(contractAddress, contractABI, signer);
 
-// Initialize the dApp
-const initApp = async () => {
-    if (window.ethereum) {
+async function listModel() {
+    const name = document.getElementById("modelName").value.trim();
+    const description = document.getElementById("modelDescription").value.trim();
+    const price = document.getElementById("modelPrice").value.trim();
+
+    if (!price || isNaN(price) || parseFloat(price) <= 0) {
+        alert("Please enter a valid price in ETH!");
+        return;
+    }
+
+    try {
+        const priceInWei = ethers.utils.parseEther(price);
+        console.log("Parsed price in Wei:", priceInWei.toString());
+
+        const tx = await contract.listModel(name, description, priceInWei);
+        await tx.wait();
+        alert("Model listed successfully!");
+    } catch (error) {
+        console.error("Error during listModel transaction:", error);
+        alert("Error while listing the model! See console for details.");
+    }
+}
+
+async function purchaseModel() {
+    const modelId = document.getElementById("modelIdPurchase").value.trim();
+
+    try {
+        const model = await contract.getModelDetails(modelId);
+        const price = model[2]; // Price is in Wei
+        console.log("Model details fetched:", model);
+
+        const tx = await contract.purchaseModel(modelId, { value: price });
+        await tx.wait();
+        alert("Model purchased successfully!");
+    } catch (error) {
+        console.error("Error during purchaseModel transaction:", error);
+        alert("Error while purchasing the model! See console for details.");
+    }
+}
+
+async function rateModel() {
+    const modelId = document.getElementById("modelIdRate").value.trim();
+    const rating = parseInt(document.getElementById("modelRating").value.trim(), 10);
+
+    if (isNaN(rating) || rating < 1 || rating > 5) {
+        alert("Please enter a valid rating between 1 and 5!");
+        return;
+    }
+
+    try {
+        const tx = await contract.rateModel(modelId, rating);
+        await tx.wait();
+        alert("Model rated successfully!");
+    } catch (error) {
+        console.error("Error during rateModel transaction:", error);
+        alert("Error while rating the model! See console for details.");
+    }
+}
+
+async function getModelDetails() {
+    const modelId = document.getElementById("modelIdDetails").value.trim();
+
+    try {
+        const details = await contract.getModelDetails(modelId);
+        const name = details[0];
+        const description = details[1];
+        const price = ethers.utils.formatEther(details[2]);
+        const creator = details[3];
+        const averageRating = details[5]; // Adjusted index based on ABI
+
+        document.getElementById("modelDetails").innerText = `
+            Name: ${name}
+            Description: ${description}
+            Price: ${price} ETH
+            Creator: ${creator}
+            Average Rating: ${averageRating}
+        `;
+    } catch (error) {
+        console.error("Error during getModelDetails transaction:", error);
+        alert("Error while fetching model details! See console for details.");
+    }
+}
+
+async function withdrawFunds() {
+    try {
+        const tx = await contract.withdrawFunds();
+        await tx.wait();
+        alert("Funds withdrawn successfully!");
+    } catch (error) {
+        console.error("Error during withdrawFunds transaction:", error);
+        alert("Error while withdrawing funds! See console for details.");
+    }
+}
+
+// Connection handler
+async function connectMetaMask() {
+    if (typeof window.ethereum !== "undefined") {
         try {
-            // Request accounts
-            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            account = accounts[0];
-
-            // Initialize web3 and contract
-            web3 = new Web3(window.ethereum);
-            contract = new web3.eth.Contract(contractABI, contractAddress);
-
-            // Display the account address
-            document.getElementById('account-address').textContent = account;
-
-            console.log("MetaMask connected with account:", account);
+            await window.ethereum.request({ method: "eth_requestAccounts" });
+            console.log("MetaMask connected!");
         } catch (error) {
-            console.error("MetaMask connection error:", error);
-            alert('Error connecting to MetaMask. Please try again.');
+            console.error("MetaMask connection failed:", error);
         }
     } else {
-        alert('MetaMask is not installed. Please install it to use this application.');
+        alert("MetaMask is not installed!");
     }
-};
+}
 
-// List a model
-document.getElementById('list-model-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const name = document.getElementById('model-name').value;
-    const description = document.getElementById('model-description').value;
-    const price = web3.utils.toWei(document.getElementById('model-price').value, 'ether');
+// Improved testConversion function
+function testConversion() {
+    const price = document.getElementById("modelPrice").value.trim();
 
     try {
-        document.getElementById('loading').style.display = 'block';
-        await contract.methods.listModel(name, description, price).send({ from: account });
-
-        alert('Model listed successfully!');
-        fetchAvailableModels();
+        const priceInWei = ethers.utils.parseEther(price);
+        console.log("Input (ETH):", price);
+        console.log("Converted to Wei:", priceInWei.toString());
     } catch (error) {
-        console.error('Error while listing model:', error);
-        alert('Failed to list model.');
-    } finally {
-        document.getElementById('loading').style.display = 'none';
+        console.error("Error during conversion:", error);
+        alert("Invalid input for price! Make sure it's a valid number.");
     }
-});
+}
 
-// Fetch available models
-const fetchAvailableModels = async () => {
-    try {
-        const modelCount = await contract.methods.modelsLength().call();
-        const modelsList = document.getElementById('models-grid');
-        modelsList.innerHTML = '';
-
-        for (let i = 0; i < modelCount; i++) {
-            const model = await contract.methods.models(i).call();
-            const modelItem = document.createElement('li');
-            modelItem.textContent = `${model.name} - ${web3.utils.fromWei(model.price, 'ether')} ETH`;
-            modelsList.appendChild(modelItem);
-        }
-    } catch (error) {
-        console.error('Error fetching models:', error);
-    }
-};
-
-// Purchase a model
-document.getElementById('purchase-button').addEventListener('click', async () => {
-    const modelId = document.getElementById('purchase-model-id').value;
-
-    if (!modelId) {
-        alert('Please enter a model ID!');
-        return;
-    }
-
-    try {
-        document.getElementById('loading').style.display = 'block';
-
-        const price = await contract.methods.getModelPrice(modelId).call();
-        await contract.methods.purchaseModel(modelId).send({ from: account, value: price });
-
-        alert('Model purchased successfully!');
-    } catch (error) {
-        console.error('Error purchasing model:', error);
-        alert('Failed to purchase model.');
-    } finally {
-        document.getElementById('loading').style.display = 'none';
-    }
-});
-
-// Rate a model
-document.getElementById('rate-button').addEventListener('click', async () => {
-    const modelId = document.getElementById('rate-model-id').value;
-    const rating = document.getElementById('rating-input').value;
-
-    if (!modelId || !rating) {
-        alert('Please provide both model ID and rating!');
-        return;
-    }
-
-    try {
-        document.getElementById('loading').style.display = 'block';
-
-        await contract.methods.rateModel(modelId, rating).send({ from: account });
-
-        alert('Model rated successfully!');
-    } catch (error) {
-        console.error('Error rating model:', error);
-        alert('Failed to rate model.');
-    } finally {
-        document.getElementById('loading').style.display = 'none';
-    }
-});
-
-// Withdraw funds
-document.getElementById('withdraw-button').addEventListener('click', async () => {
-    try {
-        document.getElementById('loading').style.display = 'block';
-
-        await contract.methods.withdrawFunds().send({ from: account });
-
-        alert('Funds withdrawn successfully!');
-    } catch (error) {
-        console.error('Error withdrawing funds:', error);
-        alert('Failed to withdraw funds.');
-    } finally {
-        document.getElementById('loading').style.display = 'none';
-    }
-});
-
-// Initialize the app when the page loads
-window.onload = initApp;
+// Connect MetaMask on page load
+connectMetaMask();
